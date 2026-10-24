@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inschrijven</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; padding: 20px; }
+        .card { background: white; padding: 40px 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 100%; max-width: 400px; text-align: center; }
+        h2 { color: #0f172a; margin-top: 0; margin-bottom: 10px; font-size: 1.5rem; }
+        p.desc { color: #64748b; margin-bottom: 30px; font-size: 0.95rem; line-height: 1.5; }
+        input { width: 100%; padding: 15px; margin-bottom: 20px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; box-sizing: border-box; outline: none; transition: border-color 0.3s; }
+        input:focus { border-color: #0284c7; }
+        button { width: 100%; background: #0284c7; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        button:hover { background: #0369a1; }
+        #message { margin-top: 20px; font-weight: 600; padding: 15px; border-radius: 8px; display: none; }
+        .error { background: #fef2f2; color: #ef4444; display: block; }
+        .success { background: #f0fdf4; color: #16a34a; display: block; font-size: 1.2rem; }
+        .success-num { font-size: 2.5rem; display: block; margin-top: 10px; color: #0284c7; }
+    </style>
+</head>
+<body>
+    <div class="card" id="main-card">
+        <h2>Welkom bij de praktijk</h2>
+        <p class="desc">Vul uw naam of initialen in om u aan te melden in de virtuele wachtkamer.</p>
+        <div id="form-container">
+            <input type="text" id="name" placeholder="Uw naam of initialen" required autocomplete="off">
+            <button onclick="joinQueue()">Aanmelden</button>
+        </div>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        async function joinQueue() {
+            const nameInput = document.getElementById('name');
+            const name = nameInput.value.trim();
+            const msgBox = document.getElementById('message');
+            
+            if (!name) {
+                msgBox.className = 'error';
+                msgBox.innerHTML = "Vul alstublieft een naam in.";
+                return;
+            }
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+
+            if (!token) {
+                msgBox.className = 'error';
+                msgBox.innerHTML = "Ongeldige link. Scan de QR-code opnieuw op het scherm.";
+                return;
+            }
+
+            const res = await fetch('/api/join', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, token })
+            });
+            const data = await res.json();
+
+            if (data.error) {
+                msgBox.className = 'error';
+                msgBox.innerHTML = data.error;
+            } else {
+                document.getElementById('form-container').style.display = 'none';
+                document.querySelector('p.desc').style.display = 'none';
+                msgBox.className = 'success';
+                msgBox.innerHTML = `Succesvol aangemeld! U bent nummer in de rij: <span class="success-num">${data.position}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
