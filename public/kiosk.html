@@ -59,6 +59,13 @@
     </div>
 
     <script>
+        if (prompt("Voer de toegangscode in voor het wachtkamerscherm:") !== "1234") {
+            document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px;'>Toegang geweigerd</h2>";
+            throw new Error("Foute code");
+        }
+
+        const qrContainer = document.getElementById("qrcode");
+        const queueDisplay = document.getElementById("queue-length");
         const qrContainer = document.getElementById("qrcode");
         const queueDisplay = document.getElementById("queue-length");
         const queueList = document.getElementById("queue-list");
