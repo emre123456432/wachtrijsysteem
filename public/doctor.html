@@ -35,6 +35,12 @@
     </div>
 
     <script>
+        // Beveiliging
+        if (prompt("Voer de praktijkcode in:") !== "1234") {
+            document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px;'>Toegang geweigerd</h2>";
+            throw new Error("Foute code");
+        }
+
         async function loadQueue() {
             const res = await fetch('/api/queue');
             const queue = await res.json();
@@ -64,9 +70,5 @@
         loadQueue();
         setInterval(loadQueue, 3000); 
     </script>
-    if (prompt("Voer de praktijkcode in:") !== "1234") {
-    document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px;'>Toegang geweigerd</h2>";
-    throw new Error("Foute code");
-}
 </body>
 </html>

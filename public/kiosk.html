@@ -11,19 +11,13 @@
         .right-panel { flex: 1; padding: 60px; overflow-y: auto; }
         h1 { color: #0284c7; font-size: 2.5rem; margin-bottom: 10px; text-align: center; }
         p.subtitle { color: #64748b; font-size: 1.2rem; margin-bottom: 30px; text-align: center; }
-        
-        /* QR Code Container */
         #qrcode { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); border: 2px solid #e2e8f0; }
-        
-        /* Timer Design */
         .timer-wrapper { width: 100%; max-width: 450px; margin-top: 40px; }
         .timer-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 1.1rem; }
         .timer-label { color: #64748b; font-weight: 600; }
         #timer-text { color: #0284c7; font-weight: 700; font-variant-numeric: tabular-nums; }
         .timer-track { width: 100%; height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; }
         #timer-bar { height: 100%; width: 100%; background: #0284c7; transition: width 1s linear, background-color 0.3s; }
-
-        /* Wachtrij Design */
         .queue-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #0284c7; padding-bottom: 10px; margin-bottom: 30px; }
         .queue-header h2 { font-size: 2rem; margin: 0; color: #0f172a; }
         .queue-count { background: #0284c7; color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 1.2rem; }
@@ -36,9 +30,7 @@
     <div class="left-panel">
         <h1>Inschrijven Wachtrij</h1>
         <p class="subtitle">Scan de QR-code met uw telefoon</p>
-        
         <div id="qrcode"></div>
-
         <div class="timer-wrapper">
             <div class="timer-header">
                 <span class="timer-label">Code vernieuwt in:</span>
@@ -49,7 +41,6 @@
             </div>
         </div>
     </div>
-    
     <div class="right-panel">
         <div class="queue-header">
             <h2>Huidige Wachtrij</h2>
@@ -59,6 +50,7 @@
     </div>
 
     <script>
+        // Beveiliging
         if (prompt("Voer de toegangscode in voor het wachtkamerscherm:") !== "1234") {
             document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px;'>Toegang geweigerd</h2>";
             throw new Error("Foute code");
@@ -66,17 +58,14 @@
 
         const qrContainer = document.getElementById("qrcode");
         const queueDisplay = document.getElementById("queue-length");
-        const qrContainer = document.getElementById("qrcode");
-        const queueDisplay = document.getElementById("queue-length");
         const queueList = document.getElementById("queue-list");
         const timerText = document.getElementById("timer-text");
         const timerBar = document.getElementById("timer-bar");
         
-        const baseUrl = window.location.origin + "/join.html";
+        const baseUrl = window.location.origin + "/join.html"; 
         const TOTAL_SECONDS = 120;
         let timeLeft = TOTAL_SECONDS;
         
-        // QR code groter gemaakt (400x400)
         let qrcode = new QRCode(qrContainer, { width: 400, height: 400, colorDark : "#0f172a", colorLight : "#ffffff" });
 
         function formatTime(seconds) {
@@ -88,26 +77,20 @@
         async function updateScreen() {
             const tokenRes = await fetch('/api/qr-token');
             const { token } = await tokenRes.json();
-            
             qrcode.clear();
             qrcode.makeCode(`${baseUrl}?token=${token}`);
         }
 
-        // Timer logica
         setInterval(() => {
             timeLeft--;
-            
             if (timeLeft <= 0) {
                 updateScreen();
                 timeLeft = TOTAL_SECONDS;
             }
-
-            // Update tekst en balk
             timerText.innerText = formatTime(timeLeft);
             const percentage = (timeLeft / TOTAL_SECONDS) * 100;
             timerBar.style.width = `${percentage}%`;
 
-            // Kleur rood in de laatste 10 seconden
             if (timeLeft <= 10) {
                 timerBar.style.background = "#ef4444";
                 timerText.style.color = "#ef4444";
@@ -117,7 +100,6 @@
             }
         }, 1000);
 
-        // Wachtrij ophalen logica
         async function fetchQueue() {
             const queueRes = await fetch('/api/queue');
             const queue = await queueRes.json();
@@ -125,11 +107,8 @@
             queueList.innerHTML = queue.map(p => `<li>${p.name}</li>`).join('');
         }
 
-        // Initialisatie
         updateScreen();
         fetchQueue();
-        
-        // Ververs de namenlijst elke 5 seconden
         setInterval(fetchQueue, 5000);
     </script>
 </body>
