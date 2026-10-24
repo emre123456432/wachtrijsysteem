@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Wachtkamer Scherm</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #f0f9ff; color: #0f172a; display: flex; height: 100vh; }
+        .left-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; background: white; box-shadow: 4px 0 15px rgba(0,0,0,0.05); z-index: 10; }
+        .right-panel { flex: 1; padding: 60px; overflow-y: auto; }
+        h1 { color: #0284c7; font-size: 2.5rem; margin-bottom: 10px; text-align: center; }
+        p.subtitle { color: #64748b; font-size: 1.2rem; margin-bottom: 30px; text-align: center; }
+        
+        /* QR Code Container */
+        #qrcode { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); border: 2px solid #e2e8f0; }
+        
+        /* Timer Design */
+        .timer-wrapper { width: 100%; max-width: 450px; margin-top: 40px; }
+        .timer-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 1.1rem; }
+        .timer-label { color: #64748b; font-weight: 600; }
+        #timer-text { color: #0284c7; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .timer-track { width: 100%; height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; }
+        #timer-bar { height: 100%; width: 100%; background: #0284c7; transition: width 1s linear, background-color 0.3s; }
+
+        /* Wachtrij Design */
+        .queue-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #0284c7; padding-bottom: 10px; margin-bottom: 30px; }
+        .queue-header h2 { font-size: 2rem; margin: 0; color: #0f172a; }
+        .queue-count { background: #0284c7; color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 1.2rem; }
+        ol { list-style: none; padding: 0; margin: 0; counter-reset: queue-counter; }
+        li { background: white; margin-bottom: 15px; padding: 20px 25px; border-radius: 12px; font-size: 1.5rem; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; align-items: center; border-left: 5px solid #0284c7; counter-increment: queue-counter; }
+        li::before { content: counter(queue-counter); background: #e0f2fe; color: #0284c7; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-right: 20px; font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+    <div class="left-panel">
+        <h1>Inschrijven Wachtrij</h1>
+        <p class="subtitle">Scan de QR-code met uw telefoon</p>
+        
+        <div id="qrcode"></div>
+
+        <div class="timer-wrapper">
+            <div class="timer-header">
+                <span class="timer-label">Code vernieuwt in:</span>
+                <span id="timer-text">02:00</span>
+            </div>
+            <div class="timer-track">
+                <div id="timer-bar"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="right-panel">
+        <div class="queue-header">
+            <h2>Huidige Wachtrij</h2>
+            <span class="queue-count" id="queue-length">0</span>
+        </div>
+        <ol id="queue-list"></ol>
+    </div>
+
+    <script>
+        const qrContainer = document.getElementById("qrcode");
+        const queueDisplay = document.getElementById("queue-length");
+        const queueList = document.getElementById("queue-list");
+        const timerText = document.getElementById("timer-text");
+        const timerBar = document.getElementById("timer-bar");
+        
+        const baseUrl = window.location.origin + "/join.html";
+        const TOTAL_SECONDS = 120;
+        let timeLeft = TOTAL_SECONDS;
+        
+        // QR code groter gemaakt (400x400)
+        let qrcode = new QRCode(qrContainer, { width: 400, height: 400, colorDark : "#0f172a", colorLight : "#ffffff" });
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        async function updateScreen() {
+            const tokenRes = await fetch('/api/qr-token');
+            const { token } = await tokenRes.json();
+            
+            qrcode.clear();
+            qrcode.makeCode(`${baseUrl}?token=${token}`);
+        }
+
+        // Timer logica
+        setInterval(() => {
+            timeLeft--;
+            
+            if (timeLeft <= 0) {
+                updateScreen();
+                timeLeft = TOTAL_SECONDS;
+            }
+
+            // Update tekst en balk
+            timerText.innerText = formatTime(timeLeft);
+            const percentage = (timeLeft / TOTAL_SECONDS) * 100;
+            timerBar.style.width = `${percentage}%`;
+
+            // Kleur rood in de laatste 10 seconden
+            if (timeLeft <= 10) {
+                timerBar.style.background = "#ef4444";
+                timerText.style.color = "#ef4444";
+            } else {
+                timerBar.style.background = "#0284c7";
+                timerText.style.color = "#0284c7";
+            }
+        }, 1000);
+
+        // Wachtrij ophalen logica
+        async function fetchQueue() {
+            const queueRes = await fetch('/api/queue');
+            const queue = await queueRes.json();
+            queueDisplay.innerText = queue.length;
+            queueList.innerHTML = queue.map(p => `<li>${p.name}</li>`).join('');
+        }
+
+        // Initialisatie
+        updateScreen();
+        fetchQueue();
+        
+        // Ververs de namenlijst elke 5 seconden
+        setInterval(fetchQueue, 5000);
+    </script>
+</body>
+</html>

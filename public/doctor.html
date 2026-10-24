@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Dokterspaneel - Beheer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #0f172a; padding: 40px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden; }
+        .header { background: #0f172a; color: white; padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .header h2 { margin: 0; font-size: 1.5rem; }
+        .status { background: #334155; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; }
+        .list-container { padding: 20px 30px; }
+        .empty-state { text-align: center; color: #94a3b8; padding: 40px 0; font-size: 1.1rem; }
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #e2e8f0; }
+        li:last-child { border-bottom: none; }
+        .patient-info { font-size: 1.2rem; font-weight: 600; display: flex; align-items: center; gap: 15px; }
+        .patient-num { background: #e2e8f0; color: #475569; width: 30px; height: 30px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1rem; font-weight: bold; }
+        button { background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Wachtrij Beheer</h2>
+            <div class="status">Live verbonden</div>
+        </div>
+        <div class="list-container">
+            <ul id="doctor-queue">
+                <div class="empty-state">Laden...</div>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function loadQueue() {
+            const res = await fetch('/api/queue');
+            const queue = await res.json();
+            const list = document.getElementById("doctor-queue");
+            
+            if(queue.length === 0) {
+                list.innerHTML = '<div class="empty-state">De wachtrij is momenteel leeg.</div>';
+                return;
+            }
+
+            list.innerHTML = queue.map((p, index) => 
+                `<li>
+                    <div class="patient-info">
+                        <span class="patient-num">${index + 1}</span>
+                        ${p.name}
+                    </div>
+                    <button onclick="removePatient(${p.id})">Oproepen & Verwijderen</button>
+                </li>`
+            ).join('');
+        }
+
+        async function removePatient(id) {
+            await fetch(`/api/queue/${id}`, { method: 'DELETE' });
+            loadQueue(); 
+        }
+
+        loadQueue();
+        setInterval(loadQueue, 3000); 
+    </script>
+</body>
+</html>
