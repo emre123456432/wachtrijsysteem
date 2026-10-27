@@ -75,10 +75,22 @@
         }
 
         async function updateScreen() {
-            const tokenRes = await fetch('/api/qr-token');
-            const { token } = await tokenRes.json();
-            qrcode.clear();
-            qrcode.makeCode(`${baseUrl}?token=${token}`);
+            try {
+                const tokenRes = await fetch('/api/qr-token');
+                
+                if (!tokenRes.ok) {
+                    throw new Error(`HTTP fout! Status: ${tokenRes.status}`);
+                }
+                
+                const data = await tokenRes.json();
+                
+                if (data && data.token) {
+                    qrcode.clear();
+                    qrcode.makeCode(`${baseUrl}?token=${data.token}`);
+                }
+            } catch (error) {
+                console.error("Fout bij ophalen QR-token:", error);
+            }
         }
 
         setInterval(() => {
@@ -101,10 +113,16 @@
         }, 1000);
 
         async function fetchQueue() {
-            const queueRes = await fetch('/api/queue');
-            const queue = await queueRes.json();
-            queueDisplay.innerText = queue.length;
-            queueList.innerHTML = queue.map(p => `<li>${p.name}</li>`).join('');
+            try {
+                const queueRes = await fetch('/api/queue');
+                if (!queueRes.ok) return;
+                
+                const queue = await queueRes.json();
+                queueDisplay.innerText = queue.length;
+                queueList.innerHTML = queue.map(p => `<li>${p.name}</li>`).join('');
+            } catch (error) {
+                console.error("Fout bij ophalen wachtrij:", error);
+            }
         }
 
         updateScreen();
